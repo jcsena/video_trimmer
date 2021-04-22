@@ -20,6 +20,12 @@ class TrimEditor extends StatefulWidget {
   /// By default it is set to `BoxFit.fitHeight`.
   final BoxFit fit;
 
+  /// For defining the initial start duration.
+  final Duration initStartDuration;
+
+  /// For defining the initial end duration.
+  final Duration initEndDuration;
+
   /// For defining the maximum length of the output video.
   final Duration maxVideoLength;
 
@@ -162,6 +168,8 @@ class TrimEditor extends StatefulWidget {
     required this.viewerHeight,
     this.fit = BoxFit.fitHeight,
     this.maxVideoLength = const Duration(milliseconds: 0),
+    this.initStartDuration = const Duration(milliseconds: 0),
+    this.initEndDuration = const Duration(milliseconds: 0),
     this.circleSize = 5.0,
     this.circleSizeOnDrag = 8.0,
     this.circlePaintColor = Colors.white,
@@ -281,10 +289,7 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
             if (!(_startPos.dx + details.delta.dx < 0))
               _startPos += details.delta;
 
-            _startFraction = (_startPos.dx / _thumbnailViewerW);
-
-            _videoStartPos = _videoDuration * _startFraction;
-            widget.onChangeStart!(_videoStartPos);
+            _refreshStart();
           });
           await videoPlayerController.pause();
           await videoPlayerController
@@ -299,10 +304,7 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
           if (!(_startPos.dx + details.delta.dx < 0))
             _startPos += details.delta;
 
-          _startFraction = (_startPos.dx / _thumbnailViewerW);
-
-          _videoStartPos = _videoDuration * _startFraction;
-          widget.onChangeStart!(_videoStartPos);
+          _refreshStart();
         });
         await videoPlayerController.pause();
         await videoPlayerController
@@ -324,10 +326,7 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
             maxLengthPixels!)) {
           setState(() {
             _endPos += details.delta;
-            _endFraction = _endPos.dx / _thumbnailViewerW;
-
-            _videoEndPos = _videoDuration * _endFraction;
-            widget.onChangeEnd!(_videoEndPos);
+            _refreshEnd();
           });
           await videoPlayerController.pause();
           await videoPlayerController
@@ -340,10 +339,7 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
       } else {
         setState(() {
           _endPos += details.delta;
-          _endFraction = _endPos.dx / _thumbnailViewerW;
-
-          _videoEndPos = _videoDuration * _endFraction;
-          widget.onChangeEnd!(_videoEndPos);
+          _refreshEnd();
         });
         await videoPlayerController.pause();
         await videoPlayerController
@@ -381,10 +377,24 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
     }
 
     _initializeVideoController();
-    _endPos = Offset(
-      maxLengthPixels != null ? maxLengthPixels! : _thumbnailViewerW,
-      _thumbnailViewerH,
-    );
+
+    if (widget.initStartDuration > Duration(milliseconds: 0)) {
+      _startPos = Offset(_initStartPosition, 0);
+    }
+    _refreshStart();
+
+    double endOffsetX;
+
+    if (widget.initEndDuration > Duration(milliseconds: 0)) {
+      endOffsetX = _initEndPosition;
+    } else if (maxLengthPixels != null) {
+      endOffsetX = maxLengthPixels!;
+    } else {
+      endOffsetX = _thumbnailViewerW;
+    }
+
+    _endPos = Offset(endOffsetX, _thumbnailViewerH);
+    _refreshEnd();
 
     // Defining the tween points
     _linearTween = Tween(begin: _startPos.dx, end: _endPos.dx);
@@ -404,6 +414,27 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
         }
       });
   }
+
+  void _refreshStart() {
+    _startFraction = (_startPos.dx / _thumbnailViewerW);
+
+    _videoStartPos = _videoDuration * _startFraction;
+    widget.onChangeStart!(_videoStartPos);
+  }
+
+  void _refreshEnd() {
+    _endFraction = _endPos.dx / _thumbnailViewerW;
+
+    _videoEndPos = _videoDuration * _endFraction;
+    widget.onChangeEnd!(_videoEndPos);
+  }
+
+  double get _initStartPosition =>
+      (widget.initStartDuration.inMilliseconds.toInt() / _videoDuration) *
+      _thumbnailViewerW;
+  double get _initEndPosition =>
+      (widget.initEndDuration.inMilliseconds.toInt() / _videoDuration) *
+      _thumbnailViewerW;
 
   @override
   void dispose() {
