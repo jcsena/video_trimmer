@@ -26,6 +26,9 @@ class TrimEditor extends StatefulWidget {
   /// For defining the initial end duration.
   final Duration initEndDuration;
 
+  /// For defining the minimum length of the output video.
+  final Duration minVideoLength;
+
   /// For defining the maximum length of the output video.
   final Duration maxVideoLength;
 
@@ -168,6 +171,7 @@ class TrimEditor extends StatefulWidget {
     required this.viewerHeight,
     this.fit = BoxFit.fitHeight,
     this.maxVideoLength = const Duration(milliseconds: 0),
+    this.minVideoLength = const Duration(milliseconds: 0),
     this.initStartDuration = const Duration(milliseconds: 0),
     this.initEndDuration = const Duration(milliseconds: 0),
     this.circleSize = 5.0,
@@ -214,6 +218,7 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
 
   double? fraction;
   double? maxLengthPixels;
+  double? minLengthPixels;
 
   ThumbnailViewer? thumbnailWidget;
 
@@ -282,38 +287,25 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
     if (!(_startPos.dx + details.delta.dx < 0) &&
         !(_startPos.dx + details.delta.dx > _thumbnailViewerW) &&
         !(_startPos.dx + details.delta.dx > _endPos.dx)) {
-      if (maxLengthPixels != null) {
-        if (!(_endPos.dx - _startPos.dx - details.delta.dx >
-            maxLengthPixels!)) {
-          setState(() {
-            if (!(_startPos.dx + details.delta.dx < 0))
-              _startPos += details.delta;
+      if (maxLengthPixels != null &&
+          _endPos.dx - _startPos.dx - details.delta.dx > maxLengthPixels!)
+        return;
+      if (minLengthPixels != null &&
+          _endPos.dx - _startPos.dx - details.delta.dx < minLengthPixels!)
+        return;
 
-            _refreshStart();
-          });
-          await videoPlayerController.pause();
-          await videoPlayerController
-              .seekTo(Duration(milliseconds: _videoStartPos.toInt()));
-          _linearTween.begin = _startPos.dx;
-          _animationController!.duration =
-              Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
-          _animationController!.reset();
-        }
-      } else {
-        setState(() {
-          if (!(_startPos.dx + details.delta.dx < 0))
-            _startPos += details.delta;
+      setState(() {
+        if (!(_startPos.dx + details.delta.dx < 0)) _startPos += details.delta;
+        _refreshStart();
+      });
 
-          _refreshStart();
-        });
-        await videoPlayerController.pause();
-        await videoPlayerController
-            .seekTo(Duration(milliseconds: _videoStartPos.toInt()));
-        _linearTween.begin = _startPos.dx;
-        _animationController!.duration =
-            Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
-        _animationController!.reset();
-      }
+      await videoPlayerController.pause();
+      await videoPlayerController
+          .seekTo(Duration(milliseconds: _videoStartPos.toInt()));
+      _linearTween.begin = _startPos.dx;
+      _animationController!.duration =
+          Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
+      _animationController!.reset();
     }
   }
 
@@ -321,34 +313,24 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
     if (!(_endPos.dx + details.delta.dx > _thumbnailViewerW) &&
         !(_endPos.dx + details.delta.dx < 0) &&
         !(_endPos.dx + details.delta.dx < _startPos.dx)) {
-      if (maxLengthPixels != null) {
-        if (!(_endPos.dx - _startPos.dx + details.delta.dx >
-            maxLengthPixels!)) {
-          setState(() {
-            _endPos += details.delta;
-            _refreshEnd();
-          });
-          await videoPlayerController.pause();
-          await videoPlayerController
-              .seekTo(Duration(milliseconds: _videoEndPos.toInt()));
-          _linearTween.end = _endPos.dx;
-          _animationController!.duration =
-              Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
-          _animationController!.reset();
-        }
-      } else {
-        setState(() {
-          _endPos += details.delta;
-          _refreshEnd();
-        });
-        await videoPlayerController.pause();
-        await videoPlayerController
-            .seekTo(Duration(milliseconds: _videoEndPos.toInt()));
-        _linearTween.end = _endPos.dx;
-        _animationController!.duration =
-            Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
-        _animationController!.reset();
-      }
+      if (maxLengthPixels != null &&
+          _endPos.dx - _startPos.dx + details.delta.dx > maxLengthPixels!)
+        return;
+      if (minLengthPixels != null &&
+          _endPos.dx - _startPos.dx + details.delta.dx < minLengthPixels!)
+        return;
+
+      setState(() {
+        _endPos += details.delta;
+        _refreshEnd();
+      });
+      await videoPlayerController.pause();
+      await videoPlayerController
+          .seekTo(Duration(milliseconds: _videoEndPos.toInt()));
+      _linearTween.end = _endPos.dx;
+      _animationController!.duration =
+          Duration(milliseconds: (_videoEndPos - _videoStartPos).toInt());
+      _animationController!.reset();
     }
   }
 
@@ -366,13 +348,21 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
 
     Duration totalDuration = videoPlayerController.value.duration;
 
-    if (widget.maxVideoLength > Duration(milliseconds: 0) &&
-        widget.maxVideoLength < totalDuration) {
+    if (widget.maxVideoLength > Duration(milliseconds: 0)) {
       if (widget.maxVideoLength < totalDuration) {
         fraction =
             widget.maxVideoLength.inMilliseconds / totalDuration.inMilliseconds;
 
         maxLengthPixels = _thumbnailViewerW * fraction!;
+      }
+    }
+
+    if (widget.minVideoLength > Duration(milliseconds: 0)) {
+      if (widget.minVideoLength < totalDuration) {
+        fraction =
+            widget.minVideoLength.inMilliseconds / totalDuration.inMilliseconds;
+
+        minLengthPixels = _thumbnailViewerW * fraction!;
       }
     }
 
