@@ -330,7 +330,7 @@ class Trimmer {
     }
 
     String _trimLengthCommand =
-        ' -ss $startPoint -i "$_videoPath" -t ${endPoint - startPoint} -avoid_negative_ts make_zero ';
+        ' -ss $startPoint -i "$_videoPath" -t ${endPoint - startPoint} -avoid_negative_ts make_zero -c:v libx265 -crf 28 ';
 
     if (ffmpegCommand == null) {
       _command = '$_trimLengthCommand -c:a copy ';
