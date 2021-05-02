@@ -382,7 +382,7 @@ class Trimmer {
       if (mp != null) {
         final String _stringDuration = mp["duration"];
         final double _doubleDuration = double.parse(_stringDuration);
-        final int _timeInMilliseconds = (_doubleDuration * 10000).toInt();
+        final int _timeInMilliseconds = (_doubleDuration * 1000).toInt();
         return Duration(milliseconds: _timeInMilliseconds);
       }
       return Duration(seconds: 0);
