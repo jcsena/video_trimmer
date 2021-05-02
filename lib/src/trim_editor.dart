@@ -403,6 +403,8 @@ class _TrimEditorState extends State<TrimEditor> with TickerProviderStateMixin {
           _animationController!.stop();
         }
       });
+
+    _refreshStart();
   }
 
   void _refreshStart() {
