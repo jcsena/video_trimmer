@@ -43,7 +43,7 @@ class Trimmer {
     }
   }
 
-  Future<String> _createFolderInAppDocDir(
+  static Future<String> _createFolderInAppDocDir(
     String folderName,
     StorageDir? storageDir,
   ) async {
@@ -162,9 +162,11 @@ class Trimmer {
     int? scaleGIF,
     String? videoFolderName,
     String? videoFileName,
+    File? videoFile,
     StorageDir? storageDir,
   }) async {
-    final String _videoPath = currentVideoFile!.path;
+    final String _videoPath =
+        videoFile != null ? videoFile.path : currentVideoFile!.path;
     final String _videoName = basename(_videoPath).split('.')[0];
 
     String _command;
@@ -257,6 +259,136 @@ class Trimmer {
     });
 
     return _outputPath;
+  }
+
+  static Future<String> createTrimmedVideo({
+    required double startValue,
+    required double endValue,
+    required File videoFile,
+    bool applyVideoEncoding = false,
+    FileFormat? outputFormat,
+    String? ffmpegCommand,
+    String? customVideoFormat,
+    int? fpsGIF,
+    int? scaleGIF,
+    String? videoFolderName,
+    String? videoFileName,
+    StorageDir? storageDir,
+  }) async {
+    final FlutterFFmpeg _flutterFFmpeg = new FlutterFFmpeg();
+    final String _videoPath = videoFile.path;
+    final String _videoName = basename(_videoPath).split('.')[0];
+
+    String _command;
+
+    // Formatting Date and Time
+    String dateTime = DateFormat.yMMMd()
+        .addPattern('-')
+        .add_Hms()
+        .format(DateTime.now())
+        .toString();
+
+    // String _resultString;
+    String _outputPath;
+    String? _outputFormatString;
+    String formattedDateTime = dateTime.replaceAll(' ', '');
+
+    print("DateTime: $dateTime");
+    print("Formatted: $formattedDateTime");
+
+    if (videoFolderName == null) {
+      videoFolderName = "Trimmer";
+    }
+
+    if (videoFileName == null) {
+      videoFileName = "${_videoName}_trimmed:$formattedDateTime";
+    }
+
+    videoFileName = videoFileName.replaceAll(' ', '_');
+
+    String path = await _createFolderInAppDocDir(
+      videoFolderName,
+      storageDir,
+    ).whenComplete(
+      () => print("Retrieved Trimmer folder"),
+    );
+
+    Duration startPoint = Duration(milliseconds: startValue.toInt());
+    Duration endPoint = Duration(milliseconds: endValue.toInt());
+
+    // Checking the start and end point strings
+    print("Start: ${startPoint.toString()} & End: ${endPoint.toString()}");
+
+    print(path);
+
+    if (outputFormat == null) {
+      outputFormat = FileFormat.mp4;
+      _outputFormatString = outputFormat.toString();
+      print('OUTPUT: $_outputFormatString');
+    } else {
+      _outputFormatString = outputFormat.toString();
+    }
+
+    String _trimLengthCommand =
+        ' -ss $startPoint -i "$_videoPath" -t ${endPoint - startPoint} -avoid_negative_ts make_zero ';
+
+    if (ffmpegCommand == null) {
+      _command = '$_trimLengthCommand -c:a copy ';
+
+      if (!applyVideoEncoding) {
+        _command += '-c:v copy ';
+      }
+
+      if (outputFormat == FileFormat.gif) {
+        if (fpsGIF == null) {
+          fpsGIF = 10;
+        }
+        if (scaleGIF == null) {
+          scaleGIF = 480;
+        }
+        _command =
+            '$_trimLengthCommand -vf "fps=$fpsGIF,scale=$scaleGIF:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 ';
+      }
+    } else {
+      _command = '$_trimLengthCommand $ffmpegCommand ';
+      _outputFormatString = customVideoFormat;
+    }
+
+    _outputPath = '$path$videoFileName$_outputFormatString';
+
+    _command += '"$_outputPath"';
+
+    await _flutterFFmpeg.execute(_command).whenComplete(() {
+      print('Got value');
+      debugPrint('Video successfuly saved');
+      // _resultString = 'Video successfuly saved';
+    }).catchError((error) {
+      print('Error');
+      // _resultString = 'Couldn\'t save the video';
+      debugPrint('Couldn\'t save the video');
+    });
+
+    return _outputPath;
+  }
+
+  static Future<Duration> getDurationVideo(String videoPath) async {
+    try {
+      final FlutterFFprobe flutterFFprobe = FlutterFFprobe();
+      final mediaInformation =
+          await flutterFFprobe.getMediaInformation(videoPath);
+
+      final Map<dynamic, dynamic>? mp = mediaInformation.getMediaProperties();
+
+      if (mp != null) {
+        final String _stringDuration = mp["duration"];
+        final double _doubleDuration = double.parse(_stringDuration);
+        final int _timeInMilliseconds = (_doubleDuration * 10000).toInt();
+        return Duration(milliseconds: _timeInMilliseconds);
+      }
+      return Duration(seconds: 0);
+    } catch (e) {
+      return Duration(seconds: 0);
+    }
   }
 
   /// For getting the video controller state, to know whether the
