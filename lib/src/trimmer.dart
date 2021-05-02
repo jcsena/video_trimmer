@@ -241,7 +241,6 @@ class Trimmer {
       }
     } else {
       _command = '$_trimLengthCommand $ffmpegCommand ';
-      _outputFormatString = customVideoFormat;
     }
 
     _outputPath = '$path$videoFileName$_outputFormatString';
