@@ -1,11 +1,11 @@
 import 'dart:io';
+import 'package:cached_video_player/cached_video_player.dart';
 import 'package:path/path.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:video_player/video_player.dart';
 import 'package:video_trimmer/src/file_formats.dart';
 import 'package:video_trimmer/src/storage_dir.dart';
 import 'package:video_trimmer/src/trim_editor.dart';
