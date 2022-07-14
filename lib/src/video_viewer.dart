@@ -61,7 +61,7 @@ class _VideoViewerState extends State<VideoViewer> {
                       color: widget.borderColor,
                     ),
                   ),
-                  child: VideoPlayer(videoPlayerController),
+                  child: CachedVideoPlayer(videoPlayerController),
                 )
               : Container(
                   child: Center(

@@ -6,7 +6,7 @@ import 'package:video_trimmer/src/thumbnail_viewer.dart';
 import 'package:video_trimmer/src/trim_editor_painter.dart';
 import 'package:video_trimmer/src/trimmer.dart';
 
-late VideoPlayerController videoPlayerController;
+late CachedVideoPlayerController videoPlayerController;
 
 class TrimEditor extends StatefulWidget {
   /// For defining the total trimmer area width

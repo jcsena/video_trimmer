@@ -13,17 +13,18 @@ class Preview extends StatefulWidget {
 }
 
 class _PreviewState extends State<Preview> {
-  late VideoPlayerController _controller;
+  late CachedVideoPlayerController _controller;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = VideoPlayerController.file(File(widget.outputVideoPath!))
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-      });
+    _controller =
+        CachedVideoPlayerController.file(File(widget.outputVideoPath!))
+          ..initialize().then((_) {
+            setState(() {});
+            _controller.play();
+          });
   }
 
   @override
@@ -44,7 +45,7 @@ class _PreviewState extends State<Preview> {
           aspectRatio: _controller.value.aspectRatio,
           child: _controller.value.isInitialized
               ? Container(
-                  child: VideoPlayer(_controller),
+                  child: CachedVideoPlayer(_controller),
                 )
               : Container(
                   child: Center(
